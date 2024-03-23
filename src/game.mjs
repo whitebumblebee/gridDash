@@ -1,4 +1,5 @@
 import readline from 'readline'
+import { randomUUID } from 'crypto';
 
 function getUserInput(prompt) {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
@@ -7,8 +8,8 @@ function getUserInput(prompt) {
 export class Player {
     constructor(point) {
         this.coordinate = point;
-        this.alive = true;
         this.id = null;
+        this.gameId = null;
     }
 }
 export class Point {
@@ -23,6 +24,7 @@ export class Point {
 }
 export class Game {
     constructor(rows, columns) {
+        this.id = randomUUID();
         this.rows = rows;
         this.columns = columns;
         this.grid = this.createGrid(this.rows, this.columns)
@@ -37,11 +39,11 @@ export class Game {
         return new Point(x, y);
     }
 
-    addPlayer() {
+    addPlayer(player) {
         const randomCoordinate = this.getRandomCoordinate(this.rows, this.columns);
-        const newPlayer = new Player(randomCoordinate);
-        newPlayer.id = this.players.length + 1;
-        this.players.push(newPlayer);
+        player.coordinate = randomCoordinate;
+        player.gameId = this.id;
+        this.players.push(player);
     }
 
     createGrid(rows, columns) {
@@ -55,6 +57,12 @@ export class Game {
         return grid;
     }
 
+    findEmptyCell() {
+        // Implement logic to find an empty cell in the grid
+        // ...
+        return emptyCell; // Return { x: ..., y: ... }
+    }
+
     showGrid() {
         this.grid.forEach(rows => {
             let rowString = '';
@@ -66,8 +74,8 @@ export class Game {
             });
             console.log(rowString)
         });
-        console.log(this.players)
-        console.log("\n\n\n")
+        // console.log(this.players)
+        // console.log("\n\n\n")
     }
 
     getPath(source, destination) {
@@ -110,7 +118,7 @@ export class Game {
         const alivePlayersObject = {}
         // create keys of alive players
         this.players.forEach(player => {
-            if(player.alive && !player.coordinate.isEqual(this.destination)) {
+            if(player.gameId && !player.coordinate.isEqual(this.destination)) {
                 const key = `${player.coordinate.x}-${player.coordinate.y}`; 
                 if(key in alivePlayersObject){
                     alivePlayersObject[key] += 1;
@@ -121,27 +129,32 @@ export class Game {
         });
         // check for collision and eliminate
         this.players.forEach(player => {
-            if(player.alive) {
+            if(player.gameId) {
                 const key = `${player.coordinate.x}-${player.coordinate.y}`;
                 if(alivePlayersObject.hasOwnProperty(key) && alivePlayersObject[key] > 1){
-                    player.alive = false;
+                    player.gameId = null;
+                    this.removeEvictedPlayers();
                     console.log(`player ${player.id} has been eliminated!`)
                 }
             }
         });
 
         // check if game is over
-        if(this.players.every(player => !player.alive)){
+        if(this.players.every(player => !player.gameId)){
             clearInterval(this.gameInterval);
             console.log("All players eliminated. Game Over!")
         }
+    }
+
+    removePlayers() {
+        this.players = this.players.filter(p => p.gameId !== null);
     }
 
     checkForWinners() {
         console.log("winners check")
         console.log(this.destination)
         console.log(this.players)
-        const winner = this.players.find(player => player.alive && player.coordinate.isEqual(this.destination));
+        const winner = this.players.find(player => player.gameId && player.coordinate.isEqual(this.destination));
         console.log("did we get winner?")
         console.log(winner)
         if(winner) {
@@ -153,7 +166,7 @@ export class Game {
     play() {
         this.gameInterval = setInterval(() => {
             for(let player of this.players) {
-                if(player.alive) {
+                if(player.gameId) {
                     this.movePlayer(player);
                 }
             }
