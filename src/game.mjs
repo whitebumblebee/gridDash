@@ -6,8 +6,8 @@ function getUserInput(prompt) {
     return new Promise(resolve => rl.question(prompt, ans => { rl.close(); resolve(ans); }));
   }
 export class Player {
-    constructor(point) {
-        this.coordinate = point;
+    constructor() {
+        this.coordinate = null;
         this.id = null;
         this.gameId = null;
     }
@@ -23,14 +23,15 @@ export class Point {
     toString = () => `Point(${this.x}, ${this.y})`;
 }
 export class Game {
-    constructor(rows, columns) {
-        this.id = randomUUID();
+    constructor(rows, columns, id) {
+        this.id = id;
         this.rows = rows;
         this.columns = columns;
         this.grid = this.createGrid(this.rows, this.columns)
         this.destination = this.getRandomCoordinate(this.rows, this.columns);
         this.players = [];
         this.gameInterval = null;
+        this.isExpired = false;
     }
 
     getRandomCoordinate(m, n){
@@ -133,7 +134,7 @@ export class Game {
                 const key = `${player.coordinate.x}-${player.coordinate.y}`;
                 if(alivePlayersObject.hasOwnProperty(key) && alivePlayersObject[key] > 1){
                     player.gameId = null;
-                    this.removeEvictedPlayers();
+                    this.removePlayers();
                     console.log(`player ${player.id} has been eliminated!`)
                 }
             }
@@ -143,6 +144,7 @@ export class Game {
         if(this.players.every(player => !player.gameId)){
             clearInterval(this.gameInterval);
             console.log("All players eliminated. Game Over!")
+            this.gameIsExpired = true;
         }
     }
 
@@ -160,6 +162,7 @@ export class Game {
         if(winner) {
             clearInterval(this.gameInterval);
             console.log(`Game over. Player ${winner.id} wins!`);
+            this.gameIsExpired = true;
         }
     }
 

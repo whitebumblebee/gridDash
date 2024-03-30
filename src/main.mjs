@@ -1,47 +1,103 @@
 import { Game } from './game.mjs'
+import readline from 'readline'
 
 
+// const game = new Game(5,5);
+// for(let i=0; i<2; i++) {
+//     game.addPlayer();
+// }
+// game.play()
 
-const game = new Game(5,5);
-for(let i=0; i<2; i++) {
-    game.addPlayer();
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+// --- Game Constants ---
+const gameState = {
+    games: [],
+    players: [],
+    lastGameId: 0,
+    lastPlayerId: 0
+};
+
+function displayAvailableGames() {
+    console.log('Available Games:');
+    for (const game of gameState.games) {
+        console.log(`Game ${gameId}: ${gameState.games[gameId].players.length} players`);
+    }
 }
-game.play()
 
-// const readline = require('readline').createInterface({
-//     input: process.stdin,
-//     output: process.stdout
-// });
+function displayGrid(game) {
+    // Basic display - you'll want to improve this formatting
+    game.showGrid();
+}
 
-// // --- Game Constants ---
-// const MAX_PLAYERS_PER_GAME = 4;
+function updateGameState(gameId, player) {
+    const game = gameState.games[gameId];
+    if (game.players.length >= MAX_PLAYERS_PER_GAME) {
+        console.log('Game is full!');
+        return;
+    }
+    const emptyCell = game.findEmptyCell();
+    player.coordinate = emptyCell;
+    player.alive = true;
+    player.gameId = gameId;
+    game.addPl
+}
 
-// const gameState = {
-//     games: {},
-//     players: {}
-// };
+function addGame(m, n) {
+    gameState.lastGameId++;
+    const game = new Game(m, n, gameState.lastGameId)
+    gameState.games.push(game);
+    game.play();
+    return game.id;
+}
 
-// function displayAvailableGames() {
-//     console.log('Available Games:');
-//     for (const gameId in gameState.games) {
-//         console.log(`Game ${gameId}: ${gameState.games[gameId].players.length} players`);
-//     }
-// }
+function getGameFromId(id){
+    for(const game of gameState.game){
+        if(game.id === id) {
+            return game;
+        }
+    }
+    return null;
+}
 
-// function displayGrid(game) {
-//     // Basic display - you'll want to improve this formatting
-//     game.showGrid();
-// }
+rl.question('Want to add the game? y/n', (entry) => {
+    if(entry === 'y'){
+        rl.question('Enter rows and columns for the grid', (entry) => {
+            const [m, n] = entry.split(' ');
+            const gameId = addGame(m, n)
+            console.log(`New game with ${gameId} started!`)
+            console.log(`Total no of games running = ${gameState.games.length}`)
+            let gameIds = gameState.games.map(g => g.id)
+            rl.question('Enter the id to add players your options:'+gameIds.join(','), (id) => {
+                if(id in gameIds){
+                    const game = getGameFromId(id);
+                    const player = new Player();
+                    gameState.players.push(player);
+                    game.addPlayer();
+                }
+                
+                console.log(m, n)
+                // console.log(gameState)
+                rl.close();
+            });
+            rl.close();
+        });
+    }
+    const [m, n] = game.split(' ');
+    addGame(m, n)
+    console.log(gameState)
+    rl.question('Want to start 2nd game? ', (game) => {
+        const [m, n] = game.split(' ');
+        console.log(m, n)
+        // console.log(gameState)
+        rl.close();
+    });
+    
+  });
 
-// function updateGameState(gameId, player) {
-//     const game = gameState.games[gameId];
-//     if (game.players.length >= MAX_PLAYERS_PER_GAME) {
-//         console.log('Game is full!');
-//         return;
-//     }
-//     const emptyCell = game.findEmptyCell();
-//     player.coordinate = emptyCell;
-//     player.alive = true;
-//     player.gameId = gameId;
-//     game.addPl
-// }
+
+
+
