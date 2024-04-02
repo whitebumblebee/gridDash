@@ -1,15 +1,13 @@
-import readline from 'readline'
-
-function getUserInput(prompt) {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    return new Promise(resolve => rl.question(prompt, ans => { rl.close(); resolve(ans); }));
-  }
+import chalk from 'chalk' 
 export class Player {
-    constructor(point) {
-        this.coordinate = point;
-        this.alive = true;
-        this.id = null;
+    constructor(id) {
+        this.coordinate = null;
+        this.id = id;
+        this.gameId = null;
+        this.wonGame = false;
     }
+
+    toString = () => `Player${this.id} @ (${this.x}, ${this.y})`;
 }
 export class Point {
     constructor(x, y) {
@@ -22,13 +20,14 @@ export class Point {
     toString = () => `Point(${this.x}, ${this.y})`;
 }
 export class Game {
-    constructor(rows, columns) {
+    constructor(rows, columns, id) {
+        this.id = id;
         this.rows = rows;
         this.columns = columns;
         this.grid = this.createGrid(this.rows, this.columns)
         this.destination = this.getRandomCoordinate(this.rows, this.columns);
         this.players = [];
-        this.gameInterval = null;
+        this.isExpired = false;
     }
 
     getRandomCoordinate(m, n){
@@ -37,11 +36,11 @@ export class Game {
         return new Point(x, y);
     }
 
-    addPlayer() {
+    addPlayer(player) {
         const randomCoordinate = this.getRandomCoordinate(this.rows, this.columns);
-        const newPlayer = new Player(randomCoordinate);
-        newPlayer.id = this.players.length + 1;
-        this.players.push(newPlayer);
+        player.coordinate = randomCoordinate;
+        player.gameId = this.id;
+        this.players.push(player);
     }
 
     createGrid(rows, columns) {
@@ -66,8 +65,6 @@ export class Game {
             });
             console.log(rowString)
         });
-        console.log(this.players)
-        console.log("\n\n\n")
     }
 
     getPath(source, destination) {
@@ -100,17 +97,13 @@ export class Game {
         source = this.getPath(source, this.destination);
         player.coordinate.x = Math.max(0, Math.min(source.x, this.rows - 1));
         player.coordinate.y = Math.max(0, Math.min(source.y, this.columns - 1));
-        console.log("Player moved to:")
-        console.log(player.coordinate.x, player.coordinate.y)
-        console.log("destination is")
-        console.log(this.destination.x, this.destination.y)
+        console.log(chalk.blue(`Player${player.id} moved to: (${player.coordinate.x},${player.coordinate.y}) in game${this.id}`));
     }
 
     detectCollisions() {
         const alivePlayersObject = {}
-        // create keys of alive players
         this.players.forEach(player => {
-            if(player.alive && !player.coordinate.isEqual(this.destination)) {
+            if(player.gameId && !player.coordinate.isEqual(this.destination)) {
                 const key = `${player.coordinate.x}-${player.coordinate.y}`; 
                 if(key in alivePlayersObject){
                     alivePlayersObject[key] += 1;
@@ -121,46 +114,68 @@ export class Game {
         });
         // check for collision and eliminate
         this.players.forEach(player => {
-            if(player.alive) {
+            if(player.gameId) {
                 const key = `${player.coordinate.x}-${player.coordinate.y}`;
                 if(alivePlayersObject.hasOwnProperty(key) && alivePlayersObject[key] > 1){
-                    player.alive = false;
-                    console.log(`player ${player.id} has been eliminated!`)
+                    player.gameId = null;
+                    console.log(chalk.red(`player ${player.id} has been eliminated from game${this.id}`));
                 }
             }
         });
 
         // check if game is over
-        if(this.players.every(player => !player.alive)){
+        if(this.players.every(player => !player.gameId)){
             clearInterval(this.gameInterval);
-            console.log("All players eliminated. Game Over!")
+            console.log(chalk.red(`All players eliminated. Game${this.id} Over!`));
+            this.isExpired = true;
         }
+    }
+
+    removePlayers() {
+        
+        if(this.isExpired) {
+            for(let player of this.players){
+                player.gameId = null;
+            }
+            this.players = [];
+        }
+        this.players = this.players.filter(p => p.gameId !== null);
     }
 
     checkForWinners() {
-        console.log("winners check")
-        console.log(this.destination)
-        console.log(this.players)
-        const winner = this.players.find(player => player.alive && player.coordinate.isEqual(this.destination));
-        console.log("did we get winner?")
-        console.log(winner)
-        if(winner) {
-            clearInterval(this.gameInterval);
-            console.log(`Game over. Player ${winner.id} wins!`);
-        }
+        const winners = this.players.filter(player => player.gameId && player.coordinate.isEqual(this.destination));
+        if(winners.length > 0) {
+            if(winners.length > 1){
+                console.log(chalk.red(`Game over! ${winners.length} players won:`));
+                console.log(chalk.white(`${winners.map(p => p.id).join(',')} are the winners`));
+                winners.forEach(winner => {
+                    winner.wonGame = true;
+                    winner.gameId = null;
+                });
+                this.isExpired = true;
+            } else if(winners.length === 1){
+                console.log(chalk.red(`Game over! Player${winners[0].id} won!`));
+                winners[0].wonGame = true;
+                winners[0].gameId = null;
+                this.isExpired = true;
+            }
+    }
     }
 
     play() {
-        this.gameInterval = setInterval(() => {
+        console.log(chalk.bgRed(`destination is (${this.destination.x},${this.destination.y}) in game${this.id}`));
+        if(this.players.length > 0) {
             for(let player of this.players) {
-                if(player.alive) {
+                if(player.gameId) {
                     this.movePlayer(player);
                 }
             }
             this.detectCollisions();
             this.checkForWinners();
-            this.showGrid();
-        }, 5000);
+            this.removePlayers();
+    } else {
+        console.log(chalk.red("No players in this game"));
+    }
     }
 
 }

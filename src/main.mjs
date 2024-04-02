@@ -1,10 +1,7 @@
-import { Game } from './game.mjs'
+import Arena from "./arena.js";
 
 
+const arena = new Arena();
 
-const game = new Game(5,5);
-for(let i=0; i<2; i++) {
-    game.addPlayer();
-}
-game.play()
+arena.start()
 
