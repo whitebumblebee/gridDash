@@ -102,16 +102,6 @@ class Arena {
       this.games = this.games.filter(game => game.isExpired === false);
       this.players = this.players.filter(player => player.wonGame === false);
     }
-    displayAvailableGames() {
-        console.log('Available Games:');
-        for (const game of this.games) {
-            console.log(`Game ${game.gameId}: ${this.games[game.gameId].players.length} players`);
-        }
-    }
-
-    displayGrid(game) {
-        game.showGrid();
-    }
 
     addGame(m, n) {
         this.lastGameId++;
