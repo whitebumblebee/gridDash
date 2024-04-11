@@ -28,6 +28,7 @@ export class Game {
         this.destination = this.getRandomCoordinate(this.rows, this.columns);
         this.players = [];
         this.isExpired = false;
+        this.intervalId = null;
     }
 
     getRandomCoordinate(m, n){
