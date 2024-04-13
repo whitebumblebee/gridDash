@@ -24,11 +24,12 @@ export class Game {
         this.id = id;
         this.rows = rows;
         this.columns = columns;
-        this.grid = this.createGrid(this.rows, this.columns)
         this.destination = this.getRandomCoordinate(this.rows, this.columns);
+        this.grid = this.createGrid()
         this.players = [];
         this.isExpired = false;
         this.intervalId = null;
+        this.plays = 1;
     }
 
     getRandomCoordinate(m, n){
@@ -42,30 +43,26 @@ export class Game {
         player.coordinate = randomCoordinate;
         player.gameId = this.id;
         this.players.push(player);
+        this.grid[player.coordinate.x][player.coordinate.y] = player.id;
     }
 
-    createGrid(rows, columns) {
+    createGrid() {
         const grid = []
-        for(let i = 0; i < rows; i++) {
+        for(let i = 0; i < this.rows; i++) {
             grid[i] = []
-            for(let j = 0; j < columns; j++) {
-                grid[i][j] = new Point(i, j);
+            for(let j = 0; j < this.columns; j++) {
+                if(i===this.destination.x && j===this.destination.y){
+                    grid[i][j] = 'X'
+                } else {
+                    grid[i][j] = '_';
+                }
             }
         }
         return grid;
     }
 
     showGrid() {
-        this.grid.forEach(rows => {
-            let rowString = '';
-            rows.forEach(point => {
-                const player = this.players.find(p => {
-                    p.coordinate.isEqual(point)
-                })
-                rowString += player ? `P${player.id}`: point.toString() + " | ";
-            });
-            console.log(rowString)
-        });
+        console.log(this.grid.map(row => row.join(' ')).join('\n'));
     }
 
     getPath(source, destination) {
@@ -95,9 +92,11 @@ export class Game {
 
     movePlayer(player) {
         let source = player.coordinate;
+        this.grid[player.coordinate.x][player.coordinate.y] = '_';
         source = this.getPath(source, this.destination);
         player.coordinate.x = Math.max(0, Math.min(source.x, this.rows - 1));
         player.coordinate.y = Math.max(0, Math.min(source.y, this.columns - 1));
+        this.grid[player.coordinate.x][player.coordinate.y] = player.id;
         console.log(chalk.blue(`Player${player.id} moved to: (${player.coordinate.x},${player.coordinate.y}) in game${this.id}`));
     }
 
@@ -126,9 +125,10 @@ export class Game {
 
         // check if game is over
         if(this.players.every(player => !player.gameId)){
-            clearInterval(this.gameInterval);
+            
             console.log(chalk.red(`All players eliminated. Game${this.id} Over!`));
             this.isExpired = true;
+            clearInterval(this.intervalId);
         }
     }
 
@@ -147,36 +147,44 @@ export class Game {
         const winners = this.players.filter(player => player.gameId && player.coordinate.isEqual(this.destination));
         if(winners.length > 0) {
             if(winners.length > 1){
-                console.log(chalk.red(`Game over! ${winners.length} players won:`));
+                console.log(chalk.red(`Game ${this.id}over! ${winners.length} players won:`));
                 console.log(chalk.white(`${winners.map(p => p.id).join(',')} are the winners`));
                 winners.forEach(winner => {
                     winner.wonGame = true;
                     winner.gameId = null;
                 });
                 this.isExpired = true;
+                clearInterval(this.intervalId);
             } else if(winners.length === 1){
-                console.log(chalk.red(`Game over! Player${winners[0].id} won!`));
+                console.log(chalk.red(`Game ${this.id} over! Player${winners[0].id} won!`));
                 winners[0].wonGame = true;
                 winners[0].gameId = null;
                 this.isExpired = true;
+                clearInterval(this.intervalId);
             }
     }
     }
 
     play() {
-        console.log(chalk.bgRed(`destination is (${this.destination.x},${this.destination.y}) in game${this.id}`));
-        if(this.players.length > 0) {
-            for(let player of this.players) {
-                if(player.gameId) {
-                    this.movePlayer(player);
+        this.intervalId = setInterval(() => {
+            console.log(chalk.bgRed(`Game ${this.id} Turn - ${this.plays}`));
+            if(this.players.length > 0) {
+                for(let player of this.players) {
+                    if(player.gameId) {
+                        this.movePlayer(player);
+                    }
                 }
+                this.detectCollisions();
+                this.checkForWinners();
+                this.showGrid();
+                this.plays++;
+                this.removePlayers();
+            } else {
+                console.log(chalk.red("No players in this game"));
             }
-            this.detectCollisions();
-            this.checkForWinners();
-            this.removePlayers();
-    } else {
-        console.log(chalk.red("No players in this game"));
-    }
+        }, 5000);
+        
+    
     }
 
 }
