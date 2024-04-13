@@ -97,7 +97,7 @@ export class Game {
         player.coordinate.x = Math.max(0, Math.min(source.x, this.rows - 1));
         player.coordinate.y = Math.max(0, Math.min(source.y, this.columns - 1));
         this.grid[player.coordinate.x][player.coordinate.y] = player.id;
-        console.log(chalk.blue(`Player${player.id} moved to: (${player.coordinate.x},${player.coordinate.y}) in game${this.id}`));
+        // console.log(chalk.blue(`Player${player.id} moved to: (${player.coordinate.x},${player.coordinate.y}) in game${this.id}`));
     }
 
     detectCollisions() {
